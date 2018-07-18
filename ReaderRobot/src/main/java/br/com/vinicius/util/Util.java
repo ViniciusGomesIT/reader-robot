@@ -20,7 +20,10 @@ public class Util {
 		correctFileExtensions.add(".html");
 		correctFileExtensions.add(".css");
 		correctFileExtensions.add(".jvm");
+		correctFileExtensions.add(".sql");
 		correctFileExtensions.add(".xsd");
+		correctFileExtensions.add(".js");
+		correctFileExtensions.add(".vm");
 
 		return correctFileExtensions;
 	}
@@ -32,9 +35,9 @@ public class Util {
 		for (File directory : getAllDirectories(Directory)) {
 			// percorrendo todos os arquivos de cada diretório
 			for (File file : directory.listFiles()) {
-				// percorrendo a lista de extensões à considerar
+				// percorrendo a lista de extensÃµes Ã  considerar
 				for (String extension : correctFileExtensions()) {
-					// checando se o arquivo contém a extensão desejada
+					// checando se o arquivo contém a extensÃ£o desejada
 					if (file.getAbsolutePath().contains(extension)) {
 						allFilesList.add(file);
 					}
@@ -47,16 +50,18 @@ public class Util {
 	}
 
 	public List<File> getAllDirectories(File directory) {
+		this.allDirectories.clear();
+		
 		listDirectories(directory);
 
 		return this.allDirectories;
 	}
 
 	// @METHOD
-	// Obtendo todos os diretórios
-	public void listDirectories(File directory) {
-
-		// desconsiderando pastas de configuração
+	// Obtendo todos os diretÃ³rios
+	public void listDirectories(File directory) {		
+		
+		// desconsiderando pastas de configuraÃ§Ã£o
 		if (directory.isDirectory() 
 				&& !directory.getAbsolutePath().contains(".metadata")
 				&& !directory.getAbsolutePath().contains(".recommenders")
@@ -64,13 +69,9 @@ public class Util {
 				&& !directory.getAbsolutePath().contains(".git") 
 				&& !directory.getAbsolutePath().contains("META-INF")
 				&& !directory.getAbsolutePath().contains("target")) {
-
-			// considerando apenas os diretórios que contém src\main\java ou src\main\resources
-			if (directory.getPath().contains("src\\main\\java") 
-					|| directory.getPath().contains("src\\main\\resources") ) {
-				allDirectories.add(directory);
-			}
-
+		
+			allDirectories.add(directory);
+			
 			String[] subDirectory = directory.list();
 
 			if (subDirectory != null) {
