@@ -33,8 +33,9 @@ public class Robot {
 	private void searchStringInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {		
 		
 		System.out.println("Searching for: " + stringToSearch);
-		
+
 		for (File file : allFilesList) {
+			boolean added = false;
 			BufferedReader br = new BufferedReader(new FileReader(file.getAbsolutePath()));
 			int contLinha = 0;
 
@@ -57,7 +58,7 @@ public class Robot {
 					bufferedWriter.newLine();
 
 					bufferedWriter.close();
-					
+					added = true;
 					System.out.println("Added: " + file.getName() + " Line: " + contLinha);
 				}
 			}

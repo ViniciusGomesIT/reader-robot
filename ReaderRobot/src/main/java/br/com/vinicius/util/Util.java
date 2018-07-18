@@ -24,6 +24,7 @@ public class Util {
 		correctFileExtensions.add(".xsd");
 		correctFileExtensions.add(".js");
 		correctFileExtensions.add(".vm");
+		correctFileExtensions.add(".pco");
 
 		return correctFileExtensions;
 	}
