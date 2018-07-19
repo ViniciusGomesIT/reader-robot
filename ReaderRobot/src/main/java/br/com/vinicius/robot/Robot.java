@@ -12,30 +12,34 @@ import br.com.vinicius.util.Util;
 
 public class Robot {
 
+	// URL raiz
 	private static File URL_WORKSPACE = new File("C:\\vivere_desenv\\financeira\\");
 	
 	private Util util = new Util();
-		
-	private String exitFilePath = System.getProperty("user.dir") + "\\src\\main\\resources\\" + "outPutFile.txt";
+	
+	// Configuração do arquivo de saída
+	private String exiteFileName = "outPutFile.txt";	
+	private String exitFilePath = System.getProperty("user.dir") 
+			+ "\\src\\main\\resources\\" 
+			+ exiteFileName;
+	
 	private File exitFile = new File(exitFilePath);
 		
 	public void run() throws IOException {
 		
-		List<String> inputList = util.getInputData();
+		List<String> inputList = util.getInputDataParameters();
 		List<File> allFilesList = util.getAllFiles(URL_WORKSPACE);
 		
-		for (String inputData : inputList) {
-			
-			searchStringInWorkSpace(allFilesList, inputData);
+		for (String inputData : inputList) {			
+			searchParameterInWorkSpace(allFilesList, inputData);
 		}
 	}
 
-	private void searchStringInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {		
+	private void searchParameterInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {		
 		
 		System.out.println("Searching for: " + stringToSearch);
 
 		for (File file : allFilesList) {
-			boolean added = false;
 			BufferedReader br = new BufferedReader(new FileReader(file.getAbsolutePath()));
 			int contLinha = 0;
 
@@ -44,8 +48,7 @@ public class Robot {
 				String linha = br.readLine();
 				
 				if (linha.isEmpty() || linha == null) {					
-					
-					continue;
+					continue;	
 					
 				} else if (linha.contains(stringToSearch)) {
 					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(exitFile, true));				
@@ -58,7 +61,7 @@ public class Robot {
 					bufferedWriter.newLine();
 
 					bufferedWriter.close();
-					added = true;
+					
 					System.out.println("Added: " + file.getName() + " Line: " + contLinha);
 				}
 			}
