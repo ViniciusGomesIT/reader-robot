@@ -50,7 +50,9 @@ public class Robot {
 				if (linha.isEmpty() || linha == null) {					
 					continue;	
 					
-				} else if (linha.contains(stringToSearch)) {
+				} else if (linha.contains(stringToSearch) 
+						&& !linha.startsWith("package")
+						&& !linha.startsWith("import")) {
 					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(exitFile, true));				
 
 					bufferedWriter.write("[" + stringToSearch + "]");
