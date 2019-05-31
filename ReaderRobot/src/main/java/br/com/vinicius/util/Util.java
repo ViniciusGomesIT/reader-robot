@@ -5,9 +5,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -21,25 +21,24 @@ public class Util {
 		
 	private List<File> allDirectories = new ArrayList<>();
 	private BufferedReader bufferReader;
-	private SimpleDateFormat format = new SimpleDateFormat("dd_MM_yyyy");
 
 	public List<File> getAllFiles() throws IOException {
 		log.info("Getting all files list");
 		
 		File workSpace = new File( UtilEnum.URL_WORKSPACE.getValue() );
-		List<String> invalidFileExtensions = getFileExtensions();
+		List<String> invalidFileExtensionsUpperCased = getFileExtensions();
 		List<File> directories = getAllDirectories(workSpace);
 
-		List<File> allFilesList = new ArrayList<File>();
+		List<File> allFilesList = new ArrayList<>();
 
 		for ( File directory : directories ) {
 
 			for ( File file : directory.listFiles() ) {
 
-				boolean isInvalidFile = invalidFileExtensions.stream().anyMatch(invalidExtension -> file
-						.getAbsolutePath().toUpperCase().endsWith(invalidExtension.toUpperCase()));
+				boolean isValidFile = invalidFileExtensionsUpperCased.stream()
+						.noneMatch( invalidExtension -> file.getAbsolutePath().toUpperCase().endsWith(invalidExtension) );
 
-				if ( !isInvalidFile && !file.isDirectory() ) {
+				if ( isValidFile && !file.isDirectory() ) {
 					allFilesList.add(file);
 				}
 			}
@@ -53,15 +52,15 @@ public class Util {
 		List<String> incorrectFileExtensions = new ArrayList<>();
 
 		File exclusionExtensionFile = new File(UtilEnum.BASE_URL_RESOURCES.getValue()
-				.concat(UtilEnum.URL_RESOURCES.getValue()).concat(UtilEnum.EXCLUSION_EXTENSIONS_FILE_NAME.getValue())
+				.concat(UtilEnum.URL_RESOURCES.getValue())
+				.concat(UtilEnum.EXCLUSION_EXTENSIONS_FILE_NAME.getValue())
 				.concat(UtilEnum.EXTENSION_EXCLUSION_EXTENSIONS_FILE.getValue()));
 
-		BufferedReader bufferReader = this.getBufferFromFile(exclusionExtensionFile);
+		bufferReader = this.getBufferFromFile(exclusionExtensionFile);
 		String line;
 
-		while ( null != (line = readBufferLinesUpperCasedOrNull(bufferReader))  ) {
-
-				incorrectFileExtensions.add(line);
+		while ( null != (line = readBufferLinesUpperCasedOrNull(bufferReader)) ) {
+			incorrectFileExtensions.add(line);
 		}
 
 		this.closeBuffer(bufferReader);
@@ -76,18 +75,9 @@ public class Util {
 		return this.allDirectories;
 	}
 
-	public void listDirectories(File directory) {		
+	public void listDirectories(File directory) {
 		
-		if ( directory.isDirectory() 
-				&& !directory.getAbsolutePath().contains(".metadata")
-				&& !directory.getAbsolutePath().contains(".recommenders")
-				&& !directory.getAbsolutePath().contains(".settings")
-				&& !directory.getAbsolutePath().contains(".git") 
-				&& !directory.getAbsolutePath().contains("META-INF")
-				&& !directory.getAbsolutePath().contains("target")
-				&& !directory.getAbsolutePath().contains("vivere-app.cdc.db")
-				&& !directory.getAbsolutePath().contains("\\src\\test\\")
-				&& directory.canRead() ) {
+		if ( isValidDirectory(directory) ) {
 			
 			this.allDirectories.add(directory);
 			
@@ -106,18 +96,17 @@ public class Util {
 		
 		List<String> inputData = new ArrayList<>();
 		
-		File inputDataFile = new File( 
-				UtilEnum.BASE_URL_RESOURCES.getValue()
-				.concat( UtilEnum.URL_RESOURCES.getValue() )
-				.concat( UtilEnum.INPUT_FILE_NAME.getValue() )
-				.concat( UtilEnum.EXTENSION_INPUT_FILE.getValue() ));
+		File inputDataFile = new File( UtilEnum.BASE_URL_RESOURCES.getValue()
+				.concat(UtilEnum.URL_RESOURCES.getValue())
+				.concat(UtilEnum.INPUT_FILE_NAME.getValue())
+				.concat(UtilEnum.EXTENSION_INPUT_FILE.getValue()) );
 
-		BufferedReader bufferReader = getBufferFromFile(inputDataFile);
+		bufferReader = getBufferFromFile(inputDataFile);
 		String line;
 		
 		while ( null != (line = readBufferLinesUpperCasedOrNull(bufferReader))  ) {
 
-			inputData.add(line);
+			inputData.add(line.toUpperCase());
 		}
 		
 		log.info("done");
@@ -127,27 +116,29 @@ public class Util {
 
 	public String getCsvHeader() {		
 		String separator = UtilEnum.CSV_SEPARATOR.getValue();
-		String header = String.format("PARAMETER %s LINE %s FILE", separator, separator, separator);
 		
-		return header;
+		return String.format("PARAMETER %s LINE %s FILE", separator, separator);
 	}
 
 	public String formatLineContent(String stringToSearch, int fileLine, String path) {
 		String line;
+		String contentSeparator = UtilEnum.TXT_SERPARATOR.getValue();
 
 		if ( isOutputFileCsv() ) {
+			contentSeparator = UtilEnum.CSV_SEPARATOR.getValue();
+			
 			line = String.format("[%s] %s [%s] %s [%s]", 
 					stringToSearch.toUpperCase(), 
-					UtilEnum.CSV_SEPARATOR.getValue(), 
+					contentSeparator, 
 					String.format("%010d", fileLine),
-					UtilEnum.CSV_SEPARATOR.getValue(), 
+					contentSeparator, 
 					path);
 		} else {
 			line = String.format("[%s] %s Line: [%s] %s File: [%s]", 
 					stringToSearch.toUpperCase(), 
-					UtilEnum.TXT_SERPARATOR.getValue(), 
+					contentSeparator, 
 					String.format("%010d", fileLine),
-					UtilEnum.TXT_SERPARATOR.getValue(), 
+					contentSeparator, 
 					path);
 		}
 		
@@ -155,11 +146,7 @@ public class Util {
 	}
 	
 	public boolean isOutputFileCsv() {
-		if ( UtilEnum.EXTENSION_OUTPUT_FILE.getValue().equalsIgnoreCase(".csv") ) {
-			return true;
-		} 
-		
-		return false;
+		return UtilEnum.EXTENSION_OUTPUT_FILE.getValue().equalsIgnoreCase(".csv");
 	}
 	
 	public BufferedReader getBufferFromFile(File file) throws FileNotFoundException {
@@ -173,6 +160,19 @@ public class Util {
 		}
 		
 		return bufferReader;
+	}
+	
+	public boolean isValidDirectory(File directory) {
+		return directory.isDirectory() 
+				&& !directory.getAbsolutePath().contains(".metadata")
+				&& !directory.getAbsolutePath().contains(".recommenders")
+				&& !directory.getAbsolutePath().contains(".settings")
+				&& !directory.getAbsolutePath().contains(".git") 
+				&& !directory.getAbsolutePath().contains("META-INF")
+				&& !directory.getAbsolutePath().contains("target")
+				&& !directory.getAbsolutePath().contains("vivere-app.cdc.db")
+				&& !directory.getAbsolutePath().contains("\\src\\test\\")
+				&& directory.canRead();
 	}
 	
 	public void closeBuffer(BufferedReader buffer) throws IOException {
@@ -195,7 +195,7 @@ public class Util {
 				return null;
 			}
 		} catch (IOException e) {
-			String message = String.format("There was a error while trying to read line of buffer", e.getCause());
+			String message = String.format("There was a error while trying to read line of buffer: %s", e.getCause());
 			log.error( message );
 			log.error(e);
 			throw new IOException(message);
@@ -205,11 +205,11 @@ public class Util {
 	public String getExitFileName() {		
 		String exitFileName = UtilEnum.OUTPUT_FILE_NAME.getValue()
 					.concat("_")
-					.concat( format.format(new Date()) ) 
-					.concat(UtilEnum.EXTENSION_OUTPUT_FILE.getValue());
+					.concat( LocalDate.now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy")) ) 
+					.concat( UtilEnum.EXTENSION_OUTPUT_FILE.getValue() );
 		
 		return UtilEnum.BASE_URL_RESOURCES.getValue()
 				.concat( UtilEnum.URL_RESOURCES.getValue() )
-				.concat(exitFileName);
+				.concat( exitFileName );
 	}
 }
