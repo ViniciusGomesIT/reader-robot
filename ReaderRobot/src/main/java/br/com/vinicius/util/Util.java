@@ -150,13 +150,21 @@ public class Util {
 	}
 	
 	public BufferedReader getBufferFromFile(File file) throws FileNotFoundException {
-		try {
-			this.bufferReader = new BufferedReader (new FileReader(file.getAbsolutePath()) );
-		} catch (FileNotFoundException e) {
-			String message = String.format("There was a error while trying to get a file: %s", file.getAbsolutePath());
+		String message;
+		
+		if ( null != file ) {
+			try {			
+				this.bufferReader = new BufferedReader (new FileReader(file.getAbsolutePath()) );
+			} catch (FileNotFoundException e) {
+				message = String.format("There was a error while trying to get a file: %s", file.getAbsolutePath());
+				log.error( message );
+				log.error( e );
+				throw new FileNotFoundException(message);
+			}
+		} else {
+			message = "Cannot read a file because it's null";
 			log.error( message );
-			log.error( e );
-			throw new FileNotFoundException(message);
+			throw new IllegalArgumentException( message );
 		}
 		
 		return bufferReader;
@@ -176,20 +184,29 @@ public class Util {
 	}
 	
 	public void closeBuffer(BufferedReader buffer) throws IOException {
-		try {
-			buffer.close();
-		} catch (IOException e) {
-			String message = String.format("There was a error while trying to close buffer: %s", e.getCause());
+		String message;
+		
+		if ( null != buffer ) {
+			try {
+				buffer.close();
+			} catch (IOException e) {
+				message = String.format("There was a error while trying to close buffer: %s", e.getCause());
+				log.error( message );
+				log.error(e);
+				throw new IOException( message );
+			}
+		} else {
+			message = "Buffer is null";
 			log.error( message );
-			log.error(e);
-			throw new IOException( message );
+			
+			throw new IllegalArgumentException( message );
 		}
 	}
 	
 	public String readBufferLinesUpperCasedOrNull(BufferedReader buffer) throws IOException {
 		try {
 			
-			if ( buffer != null && buffer.ready() ) {
+			if ( null != buffer && buffer.ready() ) {
 				return buffer.readLine().toUpperCase().trim();
 			} else {
 				return null;
