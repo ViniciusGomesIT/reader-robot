@@ -12,8 +12,10 @@ public class MainRobot {
 		
 		try {
 			robot.run();
+			robot.finish();
 		} catch (IOException e) {
-			throw new RuntimeException("Houve um erro no processamento do robot" + e);
+			robot.finish();
+			throw new RuntimeException( String.format("Houve um erro no processamento do robot. Cause %s, Message %s", e.getCause(), e.getMessage() ));
 		}
 	}
 }

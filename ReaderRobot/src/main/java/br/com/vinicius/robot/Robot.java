@@ -6,27 +6,41 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import br.com.vinicius.enums.UtilEnum;
 import br.com.vinicius.util.Util;
 
 public class Robot {
 
-	// URL raiz
-	private static File URL_WORKSPACE = new File("C:\\vivere_desenv\\financeira\\");
+	private static File URL_WORKSPACE = new File( UtilEnum.URL_WORKSPACE.getValue() );
+	private static final Logger log = LogManager.getLogger(Robot.class);
+	private SimpleDateFormat format = new SimpleDateFormat("dd_MM_yyyy");
 	
 	private Util util = new Util();
 	
-	// Configuração do arquivo de saída
-	private String exiteFileName = "outPutFile.txt";	
-	private String exitFilePath = System.getProperty("user.dir") 
-			+ "\\src\\main\\resources\\" 
-			+ exiteFileName;
+	private String exitFileName = UtilEnum.OUTPUT_FILE_NAME.getValue()
+			.concat("_")
+			.concat( format.format(new Date()) ) 
+			.concat(UtilEnum.EXTENSION_OUTPUT_FILE.getValue());
+	
+	private String exitFilePath = UtilEnum.BASE_URL_RESOURCES.getValue()
+			.concat( UtilEnum.URL_RESOURCES.getValue() )
+			.concat(exitFileName);
 	
 	private File exitFile = new File(exitFilePath);
+	
+	private StringBuilder contentBuild = new StringBuilder();
+	
+	private BufferedWriter writerOutputFile = null;
+	private BufferedReader readerPathFile = null;
 		
-	public void run() throws IOException {
-		
+	public void run() throws IOException {		
 		List<String> inputList = util.getInputDataParameters();
 		List<File> allFilesList = util.getAllFiles(URL_WORKSPACE);
 		
@@ -35,39 +49,60 @@ public class Robot {
 		}
 	}
 
-	private void searchParameterInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {		
-		
-		System.out.println("Searching for: " + stringToSearch);
+	private void searchParameterInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {
 
+		System.out.println( String.format("Searching for: %s", stringToSearch) );
+		
+		boolean isOutputFileCSV = util.isCsv();
+		
 		for (File file : allFilesList) {
-			BufferedReader br = new BufferedReader(new FileReader(file.getAbsolutePath()));
+
+			readerPathFile = new BufferedReader(new FileReader(file.getAbsolutePath()));
 			int contLinha = 0;
 
-			while (br.ready()) {
+			while ( readerPathFile.ready() ) {
 				contLinha++;
-				String linha = br.readLine();
-				
-				if (linha.isEmpty() || linha == null) {					
-					continue;	
-					
-				} else if (linha.contains(stringToSearch) 
-						&& !linha.startsWith("package")
-						&& !linha.startsWith("import")) {
-					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(exitFile, true));				
+				String linha = readerPathFile.readLine().trim().toUpperCase();
 
-					bufferedWriter.write("[" + stringToSearch + "]");
-					bufferedWriter.write(";");
-					bufferedWriter.write("Line: " + util.getFormatedLineNumber(contLinha));
-					bufferedWriter.write(";");
-					bufferedWriter.write("FileName: " + file.getPath());
-					bufferedWriter.newLine();
+				if ( !linha.isEmpty() 
+						&& !linha.startsWith("package") 
+						&& !linha.startsWith("import")
+						&& linha.contains(stringToSearch.toUpperCase()) ) {
 
-					bufferedWriter.close();
-					
-					System.out.println("Added: " + file.getName() + " Line: " + contLinha);
+					if ( isOutputFileCSV ) {
+						contentBuild.append(util.formatLineContent(stringToSearch, contLinha, file.getPath(),
+								UtilEnum.CSV_SEPARATOR.getValue()));
+						contentBuild.append("\n");
+					} else {
+						contentBuild.append(util.formatLineContent(stringToSearch, contLinha, file.getPath(),
+								UtilEnum.TXT_SERPARATOR.getValue()));
+						contentBuild.append("\n");
+					}
+
+					System.out.println( String.format("Added: %s, Line: %s", file.getName(), contLinha) );
 				}
-			}
-			br.close();
+			}			
 		}
 	}
+
+	public void finish() {
+		try {
+			writerOutputFile = new BufferedWriter(new FileWriter(exitFile, true));
+			
+			if ( util.isCsv() ) {
+				writerOutputFile.write(util.headerCsvConstruct());
+				writerOutputFile.newLine();
+			}
+			
+			writerOutputFile.write( contentBuild.toString() );
+			
+			readerPathFile.close();
+			writerOutputFile.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		System.out.println( ">>>>> Finished. <<<<<" );
+	}
+	
 }
