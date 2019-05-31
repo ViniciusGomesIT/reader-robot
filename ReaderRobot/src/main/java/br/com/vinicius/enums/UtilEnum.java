@@ -27,5 +27,4 @@ public enum UtilEnum {
 	public String getValue() {
 		return value;
 	}
-	
 }

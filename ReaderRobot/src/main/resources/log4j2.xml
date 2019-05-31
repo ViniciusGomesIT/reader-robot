@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration monitorInterval="60">
     <Properties>
-        <Property name="service-name">Reader Robot: </Property>
+        <Property name="service-name">reader_robot</Property>
+        <Property name="LOG_PATTERN">${service-name}---%c---%m%n
+        </Property>
     </Properties>
-
+    
+    <Appenders>
+        <Console name="Console-Appender" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern>
+                    ${LOG_PATTERN}
+                </pattern>>
+            </PatternLayout>
+        </Console>
+    </Appenders>
     <Loggers>
-        <Logger name="org.hibernate" level="INFO" additivity="false">
-            <!--<AppenderRef ref="File-Appender"/>-->
+        <Logger name="br.com.vinicius" level="DEBUG" additivity="false">
             <AppenderRef ref="Console-Appender"/>
-            <AppenderRef ref="Kafka" />
         </Logger>
-        <Logger name="org.apache.kafka" level="INFO" additivity="false"/>
-        <Root level="DEBUG">
-            <!--<AppenderRef ref="File-Appender"/>-->
-            <AppenderRef ref="Kafka" />
-            <AppenderRef ref="Console-Appender" />
-        </Root>
     </Loggers>
 </Configuration>
