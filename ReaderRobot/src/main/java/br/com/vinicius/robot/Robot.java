@@ -28,6 +28,14 @@ public class Robot {
 		log.info("Starting ReaderRobot");
 		
 		List<String> inputList = util.getInputDataParameters();
+		
+		if ( inputList.isEmpty() ) {
+			String message = "No input parameters found.";
+			
+			log.error( message );
+			throw new IllegalArgumentException( message ) ;
+		}
+		
 		List<File> allFilesList = util.getAllFiles();
 		
 		for (String inputData : inputList) {			
@@ -50,6 +58,7 @@ public class Robot {
 
 				if ( !line.startsWith("package") 
 						&& !line.startsWith("import")
+						&& !line.isEmpty()
 						&& line.contains(stringToSearch.toUpperCase()) ) {
 
 					contentBuild.append( util.formatLineContent(stringToSearch, contLinha, file.getPath()) );
