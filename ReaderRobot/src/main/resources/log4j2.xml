@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="60">
+    <Properties>
+        <Property name="service-name">reader_robot</Property>
+        <Property name="LOG_PATTERN">${service-name}---%c---%m%n
+        </Property>
+    </Properties>
+    
+    <Appenders>
+        <Console name="Console-Appender" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern>
+                    ${LOG_PATTERN}
+                </pattern>>
+            </PatternLayout>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="br.com.vinicius" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console-Appender"/>
+        </Logger>
+    </Loggers>
+</Configuration>

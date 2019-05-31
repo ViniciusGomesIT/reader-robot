@@ -2,57 +2,72 @@ package br.com.vinicius.util;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import br.com.vinicius.enums.UtilEnum;
+
 public class Util {
+	
+	private static final Logger log = LogManager.getLogger(Util.class);
+		
+	private List<File> allDirectories = new ArrayList<>();
+	private BufferedReader bufferReader;
+	private SimpleDateFormat format = new SimpleDateFormat("dd_MM_yyyy");
 
-	private List<File> allDirectories = new ArrayList<File>();
+	public List<File> getAllFiles() throws IOException {
+		log.info("Getting all files list");
+		
+		File workSpace = new File( UtilEnum.URL_WORKSPACE.getValue() );
+		List<String> invalidFileExtensions = getFileExtensions();
+		List<File> directories = getAllDirectories(workSpace);
 
-	public List<String> getFileExtensions() {
-		List<String> correctFileExtensions = new ArrayList<String>();
-
-		correctFileExtensions.add(".java");
-		correctFileExtensions.add(".xml");
-		correctFileExtensions.add(".yml");
-		correctFileExtensions.add(".html");
-		correctFileExtensions.add(".css");
-		correctFileExtensions.add(".sql");
-		correctFileExtensions.add(".xsd");
-		correctFileExtensions.add(".js");
-		correctFileExtensions.add(".vm");
-		correctFileExtensions.add(".pco");
-
-		return correctFileExtensions;
-	}
-
-	// @METHOD
-	// Obtendo todos os arquivos com as extensões informadas
-	public List<File> getAllFiles(File Directory) {
 		List<File> allFilesList = new ArrayList<File>();
 
-		// Obtendo todos os diretórios
-		for (File directory : getAllDirectories(Directory)) {
-			// Percorrendo todos os arquivos de cada diretório
-			for (File file : directory.listFiles()) {
-				// Percorrendo a lista de extensões à considerar
-				for (String extension : getFileExtensions()) {
-					// checando se o arquivo contém a extensão desejada
-					if (file.getAbsolutePath().contains(extension)) {
-						allFilesList.add(file);
-					}
-				}
+		for ( File directory : directories ) {
 
+			for ( File file : directory.listFiles() ) {
+
+				boolean isInvalidFile = invalidFileExtensions.stream().anyMatch(invalidExtension -> file
+						.getAbsolutePath().toUpperCase().endsWith(invalidExtension.toUpperCase()));
+
+				if ( !isInvalidFile && !file.isDirectory() ) {
+					allFilesList.add(file);
+				}
 			}
 		}
 
+		log.info("done");
 		return allFilesList;
 	}
+	
+	public List<String> getFileExtensions() throws IOException {
+		List<String> incorrectFileExtensions = new ArrayList<>();
 
-	// @METHOD
-	// Obtendo todos os diretórios
+		File exclusionExtensionFile = new File(UtilEnum.BASE_URL_RESOURCES.getValue()
+				.concat(UtilEnum.URL_RESOURCES.getValue()).concat(UtilEnum.EXCLUSION_EXTENSIONS_FILE_NAME.getValue())
+				.concat(UtilEnum.EXTENSION_EXCLUSION_EXTENSIONS_FILE.getValue()));
+
+		BufferedReader bufferReader = this.getBufferFromFile(exclusionExtensionFile);
+		String line;
+
+		while ( null != (line = readBufferLinesUpperCasedOrNull(bufferReader))  ) {
+
+				incorrectFileExtensions.add(line);
+		}
+
+		this.closeBuffer(bufferReader);
+		return incorrectFileExtensions;
+	}
+
 	public List<File> getAllDirectories(File directory) {
 		this.allDirectories.clear();
 		
@@ -61,12 +76,9 @@ public class Util {
 		return this.allDirectories;
 	}
 
-	// @METHOD
-	// Listando todos os diretórios
 	public void listDirectories(File directory) {		
 		
-		// Verificando se é um diretório e desconsiderando alguns
-		if (directory.isDirectory() 
+		if ( directory.isDirectory() 
 				&& !directory.getAbsolutePath().contains(".metadata")
 				&& !directory.getAbsolutePath().contains(".recommenders")
 				&& !directory.getAbsolutePath().contains(".settings")
@@ -74,52 +86,130 @@ public class Util {
 				&& !directory.getAbsolutePath().contains("META-INF")
 				&& !directory.getAbsolutePath().contains("target")
 				&& !directory.getAbsolutePath().contains("vivere-app.cdc.db")
-				&& !directory.getAbsolutePath().contains("\\src\\test\\")) {
-		
+				&& !directory.getAbsolutePath().contains("\\src\\test\\")
+				&& directory.canRead() ) {
+			
 			this.allDirectories.add(directory);
 			
 			String[] subDirectory = directory.list();
-
-			if (subDirectory != null) {
+			
+			if ( subDirectory != null ) {
 				for (String dir : subDirectory) {
-					listDirectories(new File(directory + File.separator + dir));
+					listDirectories( new File(directory + File.separator + dir) );
 				}
 			}
 		}
 	}
 
-	public String getFormatedLineNumber(int contLinha) {
-
-		String cont = String.valueOf(contLinha);
-		int length = 5 - cont.length();
-
-		if (length != 0) {
-			for (int i = 0; i < length; i++) {
-				cont = "0" + cont;
-			}
-		}
-
-		return cont;
-	}
-
-	// @METHOD
-	// Obtendo parâmetros de entrada a serem pesquisados
 	public List<String> getInputDataParameters() throws IOException {
-		List<String> inputData = new ArrayList<String>();
-		File inputDataFile = new File(System.getProperty("user.dir") + "\\src\\main\\resources\\" + "input.txt");
+		log.info("Getting input parameteres");
+		
+		List<String> inputData = new ArrayList<>();
+		
+		File inputDataFile = new File( 
+				UtilEnum.BASE_URL_RESOURCES.getValue()
+				.concat( UtilEnum.URL_RESOURCES.getValue() )
+				.concat( UtilEnum.INPUT_FILE_NAME.getValue() )
+				.concat( UtilEnum.EXTENSION_INPUT_FILE.getValue() ));
 
-		BufferedReader br = new BufferedReader(new FileReader(inputDataFile.getAbsolutePath()));
+		BufferedReader bufferReader = getBufferFromFile(inputDataFile);
+		String line;
+		
+		while ( null != (line = readBufferLinesUpperCasedOrNull(bufferReader))  ) {
 
-		while (br.ready()) {
-			String linha = br.readLine();
-
-			if (linha.isEmpty() || linha == null) {
-				continue;
-			} else {
-				inputData.add(linha.trim());
-			}
+			inputData.add(line);
 		}
 		
+		log.info("done");
+		this.closeBuffer(bufferReader);
 		return inputData;
+	}
+
+	public String getCsvHeader() {		
+		String separator = UtilEnum.CSV_SEPARATOR.getValue();
+		String header = String.format("PARAMETER %s LINE %s FILE", separator, separator, separator);
+		
+		return header;
+	}
+
+	public String formatLineContent(String stringToSearch, int fileLine, String path) {
+		String line;
+
+		if ( isOutputFileCsv() ) {
+			line = String.format("[%s] %s [%s] %s [%s]", 
+					stringToSearch.toUpperCase(), 
+					UtilEnum.CSV_SEPARATOR.getValue(), 
+					String.format("%010d", fileLine),
+					UtilEnum.CSV_SEPARATOR.getValue(), 
+					path);
+		} else {
+			line = String.format("[%s] %s Line: [%s] %s File: [%s]", 
+					stringToSearch.toUpperCase(), 
+					UtilEnum.TXT_SERPARATOR.getValue(), 
+					String.format("%010d", fileLine),
+					UtilEnum.TXT_SERPARATOR.getValue(), 
+					path);
+		}
+		
+		return line;
+	}
+	
+	public boolean isOutputFileCsv() {
+		if ( UtilEnum.EXTENSION_OUTPUT_FILE.getValue().equalsIgnoreCase(".csv") ) {
+			return true;
+		} 
+		
+		return false;
+	}
+	
+	public BufferedReader getBufferFromFile(File file) throws FileNotFoundException {
+		try {
+			this.bufferReader = new BufferedReader (new FileReader(file.getAbsolutePath()) );
+		} catch (FileNotFoundException e) {
+			String message = String.format("There was a error while trying to get a file: %s", file.getAbsolutePath());
+			log.error( message );
+			log.error( e );
+			throw new FileNotFoundException(message);
+		}
+		
+		return bufferReader;
+	}
+	
+	public void closeBuffer(BufferedReader buffer) throws IOException {
+		try {
+			buffer.close();
+		} catch (IOException e) {
+			String message = String.format("There was a error while trying to close buffer: %s", e.getCause());
+			log.error( message );
+			log.error(e);
+			throw new IOException( message );
+		}
+	}
+	
+	public String readBufferLinesUpperCasedOrNull(BufferedReader buffer) throws IOException {
+		try {
+			
+			if ( buffer != null && buffer.ready() ) {
+				return buffer.readLine().toUpperCase().trim();
+			} else {
+				return null;
+			}
+		} catch (IOException e) {
+			String message = String.format("There was a error while trying to read line of buffer", e.getCause());
+			log.error( message );
+			log.error(e);
+			throw new IOException(message);
+		}
+	}
+
+	public String getExitFileName() {		
+		String exitFileName = UtilEnum.OUTPUT_FILE_NAME.getValue()
+					.concat("_")
+					.concat( format.format(new Date()) ) 
+					.concat(UtilEnum.EXTENSION_OUTPUT_FILE.getValue());
+		
+		return UtilEnum.BASE_URL_RESOURCES.getValue()
+				.concat( UtilEnum.URL_RESOURCES.getValue() )
+				.concat(exitFileName);
 	}
 }

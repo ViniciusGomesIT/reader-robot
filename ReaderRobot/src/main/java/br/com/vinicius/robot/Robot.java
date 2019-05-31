@@ -3,71 +3,92 @@ package br.com.vinicius.robot;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import br.com.vinicius.util.Util;
 
 public class Robot {
 
-	// URL raiz
-	private static File URL_WORKSPACE = new File("C:\\vivere_desenv\\financeira\\");
+	private static final Logger log = LogManager.getLogger(Robot.class);
 	
 	private Util util = new Util();
+	private String fullExitFileName = util.getExitFileName();
 	
-	// Configuração do arquivo de saída
-	private String exiteFileName = "outPutFile.txt";	
-	private String exitFilePath = System.getProperty("user.dir") 
-			+ "\\src\\main\\resources\\" 
-			+ exiteFileName;
+	private File exitFile = new File(fullExitFileName);
+	private StringBuilder contentBuild = new StringBuilder();
 	
-	private File exitFile = new File(exitFilePath);
+	private BufferedWriter bufferWriter;
+	private BufferedReader bufferReader;
 		
 	public void run() throws IOException {
+		log.info("Starting ReaderRobot");
 		
 		List<String> inputList = util.getInputDataParameters();
-		List<File> allFilesList = util.getAllFiles(URL_WORKSPACE);
+		List<File> allFilesList = util.getAllFiles();
 		
 		for (String inputData : inputList) {			
 			searchParameterInWorkSpace(allFilesList, inputData);
 		}
 	}
 
-	private void searchParameterInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {		
+	private void searchParameterInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {
+
+		log.info( String.format("Searching for: %s", stringToSearch) );
 		
-		System.out.println("Searching for: " + stringToSearch);
-
+		boolean isOutputFileCSV = util.isOutputFileCsv();
+		
 		for (File file : allFilesList) {
-			BufferedReader br = new BufferedReader(new FileReader(file.getAbsolutePath()));
+
+			bufferReader = this.util.getBufferFromFile(file);
 			int contLinha = 0;
+			String line;
 
-			while (br.ready()) {
+			while ( null != (line = util.readBufferLinesUpperCasedOrNull(bufferReader)) ) {
 				contLinha++;
-				String linha = br.readLine();
-				
-				if (linha.isEmpty() || linha == null) {					
-					continue;	
-					
-				} else if (linha.contains(stringToSearch) 
-						&& !linha.startsWith("package")
-						&& !linha.startsWith("import")) {
-					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(exitFile, true));				
 
-					bufferedWriter.write("[" + stringToSearch + "]");
-					bufferedWriter.write(";");
-					bufferedWriter.write("Line: " + util.getFormatedLineNumber(contLinha));
-					bufferedWriter.write(";");
-					bufferedWriter.write("FileName: " + file.getPath());
-					bufferedWriter.newLine();
+				if ( !line.startsWith("package") 
+						&& !line.startsWith("import")
+						&& line.contains(stringToSearch.toUpperCase()) ) {
 
-					bufferedWriter.close();
+					if ( isOutputFileCSV ) {
+						contentBuild.append(util.formatLineContent( stringToSearch, contLinha, file.getPath() ));
+						contentBuild.append("\n");
+					} else {
+						contentBuild.append(util.formatLineContent( stringToSearch, contLinha, file.getPath() ));
+						contentBuild.append("\n");
+					}
 					
-					System.out.println("Added: " + file.getName() + " Line: " + contLinha);
+					log.info( String.format("Added: %s, Line: %s", file.getName(), contLinha) );
 				}
-			}
-			br.close();
+			}			
 		}
+	}
+
+	public void finish() {
+		log.info("Trying to finish robot");
+		
+		try {
+			bufferWriter = new BufferedWriter( new FileWriter(exitFile, true) );
+			
+			if ( util.isOutputFileCsv() ) {
+				bufferWriter.write(util.getCsvHeader());
+				bufferWriter.newLine();
+			}
+			
+			bufferWriter.write( contentBuild.toString() );
+			
+			util.closeBuffer(bufferReader);
+			bufferWriter.close();
+		} catch (IOException e) {
+			log.error( String.format("There was an error while trying to finish robot: %s", e.getMessage()) );
+			log.error(e);
+		}
+		
+		log.info( ">>>>> Finished. <<<<<" );
 	}
 }
