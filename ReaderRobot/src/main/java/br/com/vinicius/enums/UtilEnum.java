@@ -6,7 +6,7 @@ public enum UtilEnum {
 	URL_RESOURCES("\\src\\main\\resources\\"),
 	URL_WORKSPACE("C:\\vivere_desenv\\financeira\\"),
 	
-	INPUT_FILE_NAME("input"),
+	INPUT_FILE_NAME("inputData"),
 	EXTENSION_INPUT_FILE(".txt"),
 	
 	OUTPUT_FILE_NAME("outPutFile"),
@@ -22,7 +22,7 @@ public enum UtilEnum {
 		this.value = value;
 	}
 
-	public String value;
+	private String value;
 
 	public String getValue() {
 		return value;

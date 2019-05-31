@@ -22,7 +22,6 @@ public class Robot {
 	private File exitFile = new File(fullExitFileName);
 	private StringBuilder contentBuild = new StringBuilder();
 	
-	private BufferedWriter bufferWriter;
 	private BufferedReader bufferReader;
 		
 	public void run() throws IOException {
@@ -39,9 +38,7 @@ public class Robot {
 	private void searchParameterInWorkSpace(List<File> allFilesList, String stringToSearch) throws IOException {
 
 		log.info( String.format("Searching for: %s", stringToSearch) );
-		
-		boolean isOutputFileCSV = util.isOutputFileCsv();
-		
+
 		for (File file : allFilesList) {
 
 			bufferReader = this.util.getBufferFromFile(file);
@@ -55,25 +52,19 @@ public class Robot {
 						&& !line.startsWith("import")
 						&& line.contains(stringToSearch.toUpperCase()) ) {
 
-					if ( isOutputFileCSV ) {
-						contentBuild.append(util.formatLineContent( stringToSearch, contLinha, file.getPath() ));
-						contentBuild.append("\n");
-					} else {
-						contentBuild.append(util.formatLineContent( stringToSearch, contLinha, file.getPath() ));
-						contentBuild.append("\n");
-					}
+					contentBuild.append( util.formatLineContent(stringToSearch, contLinha, file.getPath()) );
+					contentBuild.append("\n");
 					
-					log.info( String.format("Added: %s, Line: %s", file.getName(), contLinha) );
+					log.info(String.format("Added: %s, Line: %s", file.getName(), contLinha));
 				}
-			}			
+			}
 		}
 	}
 
 	public void finish() {
 		log.info("Trying to finish robot");
 		
-		try {
-			bufferWriter = new BufferedWriter( new FileWriter(exitFile, true) );
+		try( BufferedWriter bufferWriter = new BufferedWriter(new FileWriter(exitFile, true)) ) {
 			
 			if ( util.isOutputFileCsv() ) {
 				bufferWriter.write(util.getCsvHeader());
@@ -83,7 +74,6 @@ public class Robot {
 			bufferWriter.write( contentBuild.toString() );
 			
 			util.closeBuffer(bufferReader);
-			bufferWriter.close();
 		} catch (IOException e) {
 			log.error( String.format("There was an error while trying to finish robot: %s", e.getMessage()) );
 			log.error(e);
