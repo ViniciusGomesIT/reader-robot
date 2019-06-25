@@ -54,7 +54,7 @@ public class Util {
 		File exclusionExtensionFile = new File(UtilEnum.BASE_URL_RESOURCES.getValue()
 				.concat(UtilEnum.URL_RESOURCES.getValue())
 				.concat(UtilEnum.EXCLUSION_EXTENSIONS_FILE_NAME.getValue())
-				.concat(UtilEnum.EXTENSION_EXCLUSION_EXTENSIONS_FILE.getValue()));
+				.concat(UtilEnum.EXCLUSION_EXTENSIONS_FILE.getValue()));
 
 		bufferReader = this.getBufferFromFile(exclusionExtensionFile);
 		String line;
