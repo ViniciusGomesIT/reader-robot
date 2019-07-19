@@ -1,5 +1,8 @@
 package br.com.vinicius.robot;
 
+import static br.com.vinicius.enums.ErrorMessagesEnum.FINISH_ROBOT_ERROR;
+import static br.com.vinicius.enums.ErrorMessagesEnum.NO_IMPUT_PARAMETERS_FOUND_ERROR;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,13 +13,16 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import br.com.vinicius.util.Util;
+import br.com.vinicius.util.FileUtils;
+import br.com.vinicius.util.Utils;
 
 public class Robot {
 
 	private static final Logger log = LogManager.getLogger(Robot.class);
 	
-	private Util util = new Util();
+	private Utils util = new Utils();
+	private FileUtils fileUtils = new FileUtils();
+	
 	private String fullExitFileName = util.getExitFileName();
 	
 	private File exitFile = new File(fullExitFileName);
@@ -27,19 +33,17 @@ public class Robot {
 	public void run() throws IOException {
 		log.info("Starting ReaderRobot");
 		
-		List<String> inputList = util.getInputDataParameters();
+		List<String> inputPamatersList = fileUtils.getInputDataParameters();
 		
-		if ( inputList.isEmpty() ) {
-			String message = "No input parameters found.";
-			
-			log.error( message );
-			throw new IllegalArgumentException( message ) ;
+		if ( inputPamatersList.isEmpty() ) {			
+			log.error( NO_IMPUT_PARAMETERS_FOUND_ERROR.getMessage() );
+			throw new IllegalArgumentException( NO_IMPUT_PARAMETERS_FOUND_ERROR.getMessage() ) ;
 		}
 		
-		List<File> allFilesList = util.getAllFiles();
+		List<File> allFiles = fileUtils.getAllFiles();
 		
-		for (String inputData : inputList) {			
-			searchParameterInWorkSpace(allFilesList, inputData);
+		for (String inputData : inputPamatersList) {			
+			searchParameterInWorkSpace(allFiles, inputData);
 		}
 	}
 
@@ -50,21 +54,20 @@ public class Robot {
 		for (File file : allFilesList) {
 
 			bufferReader = this.util.getBufferFromFile(file);
-			int contLinha = 0;
+			int numeroLinha = 0;
 			String line;
 
 			while ( null != (line = util.readBufferLinesUpperCasedOrNull(bufferReader)) ) {
-				contLinha++;
-
+				numeroLinha++;
 				if ( !line.startsWith("package") 
 						&& !line.startsWith("import")
 						&& !line.isEmpty()
-						&& line.contains(stringToSearch.toUpperCase()) ) {
+						&& line.contains( stringToSearch ) ) {
 
-					contentBuild.append( util.formatLineContent(stringToSearch, contLinha, file.getPath()) );
+					contentBuild.append( util.formatLineContent(stringToSearch, numeroLinha, file.getPath()) );
 					contentBuild.append("\n");
 					
-					log.info(String.format("Added: %s, Line: %s", file.getName(), contLinha));
+					log.info(String.format("Added: %s, Line: %s", file.getName(), numeroLinha));
 				}
 			}
 		}
@@ -80,11 +83,11 @@ public class Robot {
 				bufferWriter.newLine();
 			}
 			
-			bufferWriter.write( contentBuild.toString() );
-			
+			bufferWriter.write( contentBuild.toString() );			
 			util.closeBuffer(bufferReader);
+			
 		} catch (IOException e) {
-			log.error( String.format("There was an error while trying to finish robot: %s", e.getMessage()) );
+			log.error( String.format(FINISH_ROBOT_ERROR.getMessage(), e.getMessage()) );
 			log.error(e);
 		}
 		
